@@ -1,0 +1,274 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates Continuous Integration Build/Deploy Jobs.
+Parameters:
+  Author:
+    Description: What is the authors name
+    Type: String
+    Default: Mahender Reddy Sadi
+    MinLength: 3
+    MaxLength: 30
+  AWSAccountID:
+    Description: What is Dev/Stg AWS Account Id?
+    Type: String
+    Default: 
+    MinLength: 3
+    MaxLength: 100
+  Timeout:
+    Description: The time in minutes before the build jobs will stop executing
+    Type: String
+    Default: 20
+  CodeBuildSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnets to use for the codebuild project
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: The VpcId of the existing VPC you would like to deploy within.
+Resources:
+  CodeBuildDev:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: coin-marker-dev
+      ServiceRole: !Join [ '', [ 'arn:aws:iam::', !Ref 'AWS::AccountId', ':', 'role/CodeBuildServiceRole' ] ]
+      Artifacts:
+        Type: S3
+        Location: project-codebuild
+        Name: coin-marker
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:2.0-1.9.0
+        PrivilegedMode: true
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+        - Name: STAGE
+          Value: dev
+        - Name: ACCOUNT_ID
+          Value: !Ref AWSDevAccountID
+        - Name: ACCOUNT_ENV
+          Value: dev
+      Source:
+        Type: S3
+        Location: arn:aws:s3:::project-git-clone/coin-marker.zip
+        BuildSpec: buildspec.yml
+      TimeoutInMinutes: !Ref Timeout
+      VpcConfig:
+        VpcId: !Ref VpcId
+        Subnets: !Ref CodeBuildSubnets
+        SecurityGroupIds:
+          - !Ref CodeBuildSecurityGroup
+  CodeBuildQa:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: coin-marker-qa
+      ServiceRole: !Join [ '', [ 'arn:aws:iam::', !Ref 'AWS::AccountId', ':', 'role/CodeBuildServiceRole' ] ]
+      Artifacts:
+        Type: S3
+        Location: project-codebuild
+        Name: coin-marker
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:2.0-1.9.0
+        PrivilegedMode: true
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+        - Name: STAGE
+          Value: qa
+        - Name: ACCOUNT_ID
+          Value: !Ref AWSDevAccountID
+        - Name: ACCOUNT_ENV
+          Value: dev
+      Source:
+        Type: S3
+        Location: arn:aws:s3:::project-git-clone/coin-marker.zip
+        BuildSpec: buildspec_qa.yml
+      TimeoutInMinutes: !Ref Timeout
+      VpcConfig:
+        VpcId: !Ref VpcId
+        Subnets: !Ref CodeBuildSubnets
+        SecurityGroupIds:
+          - !Ref CodeBuildSecurityGroup
+  CodeBuildTest:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: coin-marker-test
+      ServiceRole: !Join [ '', [ 'arn:aws:iam::', !Ref 'AWS::AccountId', ':', 'role/CodeBuildServiceRole' ] ]
+      Artifacts:
+        Type: S3
+        Location: project-codebuild
+        Name: coin-marker
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:2.0-1.9.0
+        PrivilegedMode: true
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+        - Name: STAGE
+          Value: test
+        - Name: AWS_ROLE_ARN
+          Value: arn:aws:iam::XXXXXXXXXXXXX:role/CodeBuildServiceRole
+        - Name: ACCOUNT_ID
+          Value: !Ref AWSPrdAccountID
+        - Name: ACCOUNT_ENV
+          Value: prd
+      Source:
+        Type: S3
+        Location: arn:aws:s3:::project-git-clone/coin-marker.zip
+        BuildSpec: buildspec_prd.yml
+      TimeoutInMinutes: !Ref Timeout
+      VpcConfig:
+        VpcId: !Ref VpcId
+        Subnets: !Ref CodeBuildSubnets
+        SecurityGroupIds:
+          - !Ref CodeBuildSecurityGroup
+  CodeBuildProd:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: coin-marker-prd
+      ServiceRole: !Join [ '', [ 'arn:aws:iam::', !Ref 'AWS::AccountId', ':', 'role/CodeBuildServiceRole' ] ]
+      Artifacts:
+        Type: S3
+        Location: project-codebuild
+        Name: coin-marker
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:2.0-1.9.0
+        PrivilegedMode: true
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+        - Name: STAGE
+          Value: prd
+        - Name: AWS_ROLE_ARN
+          Value: arn:aws:iam::XXXXXXXXXXXXX:role/CodeBuildServiceRole
+        - Name: ACCOUNT_ID
+          Value: !Ref AWSPrdAccountID
+        - Name: ACCOUNT_ENV
+          Value: prd
+      Source:
+        Type: S3
+        Location: arn:aws:s3:::project-git-clone/coin-marker.zip
+        BuildSpec: buildspec_prd.yml
+      TimeoutInMinutes: !Ref Timeout
+      VpcConfig:
+        VpcId: !Ref VpcId
+        Subnets: !Ref CodeBuildSubnets
+        SecurityGroupIds:
+          - !Ref CodeBuildSecurityGroup
+  CodePipeline:
+    Type: "AWS::CodePipeline::Pipeline"
+    Properties:
+      Name: coin-marker-pipeline
+      RoleArn: !Join [ '', [ 'arn:aws:iam::', !Ref 'AWS::AccountId', ':', 'role/AutomationServicesCodePipelineServiceRole' ] ]
+      Stages:
+      - Name: Source
+        Actions:
+        - InputArtifacts: []
+          Name: Source
+          ActionTypeId:
+            Category: Source
+            Owner: AWS
+            Version: '1'
+            Provider: S3
+          OutputArtifacts:
+          - Name: S3Src
+          Configuration:
+            S3Bucket: project-git-clone
+            S3ObjectKey: coin-marker.zip
+          RunOrder: 1
+      - Name: BuildAndDeployToDev
+        Actions:
+        - InputArtifacts:
+          - Name: S3Src
+          Name: CodeBuild
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: '1'
+            Provider: CodeBuild
+          OutputArtifacts:
+          - Name: BuildOut
+          Configuration:
+            ProjectName: coin-marker-dev
+          RunOrder: 1
+      - Name: DeployToQa
+        Actions:
+        - InputArtifacts: []
+          Name: ApproveToQa
+          ActionTypeId:
+            Category: Approval
+            Owner: AWS
+            Version: '1'
+            Provider: Manual
+          OutputArtifacts: []
+          Configuration: {}
+          RunOrder: 1
+        - InputArtifacts:
+          - Name: BuildOut
+          Name: BuildAndDeployToQa
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: '1'
+            Provider: CodeBuild
+          OutputArtifacts: []
+          Configuration:
+            ProjectName: coin-marker-qa
+          RunOrder: 2
+      - Name: DeployToTest
+        Actions:
+        - InputArtifacts: []
+          Name: ApproveToTest
+          ActionTypeId:
+            Category: Approval
+            Owner: AWS
+            Version: '1'
+            Provider: Manual
+          OutputArtifacts: []
+          Configuration: {}
+          RunOrder: 1
+        - InputArtifacts:
+          - Name: BuildOut
+          Name: BuildAndDeployToTest
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: '1'
+            Provider: CodeBuild
+          OutputArtifacts: []
+          Configuration:
+            ProjectName: coin-marker-test
+          RunOrder: 2
+      - Name: DeployToProd
+        Actions:
+        - InputArtifacts: []
+          Name: ApproveToProd
+          ActionTypeId:
+            Category: Approval
+            Owner: AWS
+            Version: '1'
+            Provider: Manual
+          OutputArtifacts: []
+          Configuration: {}
+          RunOrder: 1
+        - InputArtifacts:
+          - Name: BuildOut
+          Name: BuildAndDeployToProd
+          ActionTypeId:
+            Category: Build
+            Owner: AWS
+            Version: '1'
+            Provider: CodeBuild
+          OutputArtifacts: []
+          Configuration:
+            ProjectName: coin-marker-prd
+          RunOrder: 2
+      ArtifactStore:
+        Type: S3
+        Location: project-codepipeline
+  CodeBuildSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join ['',['coin-marker', 'CodeBuildGroup']]
+      GroupDescription: !Join ['', ["CodeBuild security group for ", "coin-marker"]]
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"

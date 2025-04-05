@@ -1,0 +1,200 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates IAM role used for the Services - Deployment Pipeline.
+Parameters:
+  Author:
+    Description: What is the authors ADS username
+    Type: String
+    Default: Mahender Reddy Sadi
+    MinLength: 3
+    MaxLength: 30
+  CodeBuildRoleName:
+    Description: The name to give to the codebuild IAM role.
+    Type: String
+    Default: CodeBuildServiceRole
+  CodePipelineRoleName:
+    Description: The name to give to the codepipeline IAM role.
+    Type: String
+    Default: CodePipelineServiceRole
+  AccountId:
+    Description: The account id for the Dev enterprise search account
+    Type: Number
+    Default: 
+
+Resources:
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref CodeBuildRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+                - "codepipeline.amazonaws.com"
+              AWS:
+                - !Sub "arn:aws:iam::${DevAccountId}:root"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: CloudFormationPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - apigateway:*
+                Effect: Allow
+                Resource:
+                  - "arn:aws:apigateway:*::/*"
+              - Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:CreateUploadBucket
+                  - cloudformation:DeleteStack
+                  - cloudformation:UpdateStack
+                Effect: Allow
+                Resource:
+                  - "arn:aws:cloudformation:*:*:stack/-*"
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource:
+                  - !Sub "arn:aws:iam::${DevAccountId}:role/${CodeBuildRoleName}"
+                  - !Sub "arn:aws:iam::${PrdAccountId}:role/${CodeBuildRoleName}"
+              - Action:
+                  - cloudformation:*
+                Effect: Allow
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                - ecr:*
+                - ecs:*
+                - iam:*
+                Resource: "*"
+        - PolicyName: DynamoDBPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - dynamodb:*
+                Effect: Allow
+                Resource:
+                  - "arn:aws:dynamodb:*:*:table/*"
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudwatch:*
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - events:*
+                Resource:
+                  - arn:aws:events:*:*:rule/-*
+              - Action:
+                  - logs:*
+                Effect: Allow
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - sns:*
+                Resource:
+                  - arn:aws:sns:*:*:*
+              - Effect: Allow
+                Action:
+                  - sqs:*
+                Resource:
+                  - arn:aws:sqs:*:*:*
+              - Sid: Stmt1111111
+                Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - arn:aws:iam::*:role/*
+              - Action:
+                  - lambda:*
+                Effect: Allow
+                Resource:
+                  - "arn:aws:lambda:*:*:function:*"
+              - Action:
+                  - lambda:*
+                Effect: Allow
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - cloudfront:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - appsync:*
+                Resource: "*"
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CodePipelineServiceRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "codepipeline.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        -
+          PolicyName: CodePipelineServiceRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+                - sts:AssumeRole
+              Resource:
+                - !Sub "arn:aws:iam::${DevAccountId}:role/${CodeBuildRoleName}"
+                - !Sub "arn:aws:iam::${PrdAccountId}:role/${CodeBuildRoleName}"
+            - Effect: Allow
+              Action:
+                - logs:*
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - codebuild:*
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - codepipeline:*
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:*
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - sns:Publish
+              Resource: "*"
+
+Outputs:
+  CodeBuildServiceRoleARN:
+    Description: The ARN of the CodeBuildServiceRole IAM role
+    Value: !GetAtt CodeBuildServiceRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-CodeBuildServiceRoleARN
+  CodePipelineServiceRoleARN:
+    Description: The ARN of the CodePipelineServiceRole IAM role
+    Value: !GetAtt CodePipelineServiceRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-CodePipelineServiceRoleARN

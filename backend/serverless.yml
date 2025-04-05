@@ -1,0 +1,152 @@
+service: coin-marker-service
+
+frameworkVersion: '>=4.0.0'
+
+plugins:
+  - serverless-python-requirements
+
+provider:
+  name: aws
+  runtime: python3.11
+  stage: dev
+  region: ${self:custom.props.region}
+  memorySize: 3072
+  timeout: 900
+  iam:
+    role: arn:aws:iam::${aws:accountId}:role/CoinMarkerServiceRole-dev
+  deploymentBucket: ${self:custom.props.buckets.deploymentBucketName}
+  environment:
+    stage: ${opt:stage, self:provider.stage}
+
+
+package:
+  individually: true
+  exclude:
+    - node_modules/**
+    - package-lock.json
+    - package.json
+
+
+custom:
+  contentCompression: 1024
+  props: ${file(env_config/env_${opt:stage, self:provider.stage}.yml)}
+  pythonRequirements:
+    dockerizePip: false
+    slim: true
+
+
+
+
+functions:
+  CoinMarkerServiceHandler:
+    timeout: 29
+    handler: lambda_handler.handler
+    role: !Sub arn:aws:iam::${AWS::AccountId}:role/CoinMarkerServiceRole-${opt:stage, self:provider.stage}
+    name: CoinMarkerServiceHandler-${opt:stage, self:provider.stage}
+    events:
+      - http:
+          path: /coin/price
+          method: GET
+          integration: lambda-proxy
+      - http:
+          path: /coin/dataset
+          method: GET
+          integration: lambda-proxy
+      - http:
+          path: /coin/volrank
+          method: GET
+          integration: lambda-proxy
+    environment:
+      API_SECRET_KEY: ${self:custom.props.apiSecretKey}
+      API_URL_BASE_PATH: ${self:custom.props.apiBasePath}
+      API_PRICE_RESOURCE_PATH: ${self:custom.props.apiResourcePath}
+      COIN_CURRENCY_TRACKER_TABLE: ${self:custom.props.coinCurrencyTrackerTable}
+  
+
+
+# resources:
+#   Resources:
+#     CoinMarkerServiceHandlerInvocationErrorAlarm:
+#       Type: "AWS::CloudWatch::Alarm"
+#       DependsOn:
+#         - CoinMarkerServiceHandlerLambdaFunction
+#       Properties:
+#         AlarmDescription: "An error occurred while invoking the CoinMarkerServiceHandler lambda."
+#         AlarmName:
+#           CoinMarkerServiceHandler-${opt:stage, self:provider.stage}-ErrorAlarm
+#         ComparisonOperator: GreaterThanOrEqualToThreshold
+#         Dimensions:
+#           -
+#             Name: FunctionName
+#             Value: CoinMarkerServiceHandler-${opt:stage, self:provider.stage}
+#         EvaluationPeriods: 1
+#         MetricName: "Errors"
+#         Namespace: AWS/Lambda
+#         AlarmActions:
+#           - Fn::Sub: 'arn:aws:sns:${self:custom.props.region}:${self:custom.props.accountId}:${self:custom.props.alarmTopic}'
+#         OKActions:
+#           - Fn::Sub: 'arn:aws:sns:${self:custom.props.region}:${self:custom.props.accountId}:${self:custom.props.alarmTopic}'
+#         Period: 300
+#         Statistic: Sum
+#         Threshold: 1
+#         TreatMissingData: notBreaching
+#     CoinMarkerServiceHandlerInvocationCountAlarm:
+#       Type: "AWS::CloudWatch::Alarm"
+#       DependsOn:
+#         - CoinMarkerServiceHandlerLambdaFunction
+#       Properties:
+#         AlarmDescription: "Too many invocations have happened for this lambda function in a short period of time."
+#         AlarmName:
+#           CoinMarkerServiceHandler-${opt:stage, self:provider.stage}-InvocationAlarm
+#         ComparisonOperator: GreaterThanOrEqualToThreshold
+#         Dimensions:
+#           -
+#             Name: FunctionName
+#             Value: CoinMarkerServiceHandler-${opt:stage, self:provider.stage}
+#         EvaluationPeriods: 1
+#         MetricName: "Invocations"
+#         Namespace: AWS/Lambda
+#         AlarmActions:
+#           - Fn::Sub: 'arn:aws:sns:${self:custom.props.region}:${self:custom.props.accountId}:${self:custom.props.alarmTopic}'
+#         OKActions:
+#           - Fn::Sub: 'arn:aws:sns:${self:custom.props.region}:${self:custom.props.accountId}:${self:custom.props.alarmTopic}'
+#         Period: 300
+#         Statistic: Sum
+#         Threshold: 10000
+#         TreatMissingData: notBreaching
+#     CoinMarkerServiceHandlerMetricFilter:
+#       Type: "AWS::Logs::MetricFilter"
+#       DependsOn:
+#         - CoinMarkerServiceHandlerLambdaFunction
+#       Properties:
+#         LogGroupName: "/aws/lambda/CoinMarkerServiceHandler-${opt:stage, self:provider.stage}"
+#         FilterPattern: "ERROR Exception - \"timeout\""
+#         MetricTransformations:
+#           -
+#             MetricName: LambdaErrors
+#             MetricNamespace: "Backend/CoinMarkerServiceHandler-${opt:stage, self:provider.stage}"
+#             MetricValue: 1
+#     CoinMarkerServiceHandlerMetricFilterAlarm:
+#       Type: "AWS::CloudWatch::Alarm"
+#       DependsOn:
+#         - CoinMarkerServiceHandlerLambdaFunction
+#       Properties:
+#         AlarmDescription: "The CoinMarkerServiceHandler lambda metric filter has caught an error."
+#         AlarmName:
+#           CoinMarkerServiceHandler-${opt:stage, self:provider.stage}-MetricFilterAlarm
+#         ComparisonOperator: GreaterThanOrEqualToThreshold
+#         EvaluationPeriods: 1
+#         MetricName: LambdaErrors
+#         Namespace: "Backend/CoinMarkerServiceHandler-${opt:stage, self:provider.stage}"
+#         AlarmActions:
+#           - Fn::Sub: 'arn:aws:sns:${self:custom.props.region}:${self:custom.props.accountId}:${self:custom.props.alarmTopic}'
+#         OKActions:
+#           - Fn::Sub: 'arn:aws:sns:${self:custom.props.region}:${self:custom.props.accountId}:${self:custom.props.alarmTopic}'
+#         Period: 300
+#         Statistic: Sum
+#         Threshold: 1
+#         TreatMissingData: notBreaching
+  
+
+
+
