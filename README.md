@@ -96,7 +96,8 @@
 # Next Steps:
 
 * It's dev-ready. Considering the non-functional requirements (scalability), it's PROD-ready.  
-* Cover unit and integration test cases.  
+* Cover unit and integration test cases.
+* Need to wrapup CICD setup, creating alias for both backend and ui.
 * Enhancements:  
     * We can make this a personal application with a signup feature.  
     * We can store the portfolio and send notifications for the marked price.  
