@@ -54,8 +54,7 @@
 10) We'll see the expected results for the `fetch_coin_price` operation only, as others rely on the Persistence Layer (DynamoDB).  
 
 # Project Architecture
-
-![Project Architecture](./coin_dashboard_architecture.png)
+[Project Architecture](https://github.com/mahisadi/project-coin-gecko/blob/master/coin_dashboard_archirecture.png)
 
 # Functional Requirements (As per the instructions)
 
