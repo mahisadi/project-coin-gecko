@@ -51,7 +51,6 @@ class ServiceManager:
             "ids": coin,
             "vs_currencies": cur
         }
-        #ids=btc&vs_currencies=usd
         pk_value = coin+'_'+cur
         print(f"Fetching data from {PRICE_URL} with params: {query_params}")
         print(f"Using headers: {headers}")
@@ -90,3 +89,8 @@ class ServiceManager:
             "statusCode": 404,
             "body": json.dumps({"message": message})
         }
+
+
+# For local run, uncomment below
+#response = ServiceManager().fetch_coin_price("bitcoin", "usd")
+#print(" response ", response)
