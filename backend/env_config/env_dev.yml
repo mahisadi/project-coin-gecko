@@ -1,0 +1,8 @@
+accountId: 991059600801
+region: us-east-1
+apiSecretKey: GeckoApiKey
+apiBasePath: https://api.coingecko.com/api/v3
+apiResourcePath: /simple/price
+coinCurrencyTrackerTable: CryptoCurrencyTracker
+buckets:
+  deploymentBucketName: pivot-code-deployment

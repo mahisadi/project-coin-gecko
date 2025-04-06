@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS IAM role for CoinMarker Service Now API.
+Parameters:
+  Author:
+    Description: What is the authors ADS username
+    Type: String
+    Default: Mahender Reddy Sadi
+    MinLength: 3
+    MaxLength: 30
+  Environment:
+    Description: dev, stg, prd, etc...
+    Type: String
+    Default: dev
+    MinLength: 2
+    MaxLength: 30
+Resources:
+
+  CoinMarkerServiceApi:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ '', [ 'CoinMarkerServiceRole-', !Ref Environment ] ]
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: CoinMarkerServiceDynamoDBPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource:
+                  - !Join [ '', [ 'arn:aws:dynamodb:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', 'table/CryptoCurrencyTracker*'] ]
+        - PolicyName: CoinMarkerServiceXRayPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource:
+                  - "*"
+        - PolicyName: CoinMarkerServiceLambdaInvokePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Join [ '', [ 'arn:aws:lambda:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', 'function:*'] ]
+        - PolicyName: CoinMarkerServiceLambdaEventSourceMappingPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:ListEventSourceMappings
+                  - lambda:UpdateEventSourceMapping
+                Resource:
+                  - "*"
+        - PolicyName: CoinMarkerServiceSecretPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:List*
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:Get*
+                Resource:
+                  - !Join [ '', [ 'arn:aws:secretsmanager:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', 'secret:', 'GeckoApiKey*'] ]
+Outputs:
+  HelpHubServiceManagerARN:
+    Description: The ARN of the CoinMarkerServiceApi IAM role
+    Value: !GetAtt CoinMarkerServiceApi.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-CoinMarkerServiceApiARN
