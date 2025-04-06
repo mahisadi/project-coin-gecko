@@ -6,6 +6,7 @@ from typing import Optional, Dict, Any, List
 from ops.secrets_manager import SecretsManager
 from ops.persistence_manager import PersistenceManager
 from decimal import Decimal
+import time
 
 load_dotenv()
 
@@ -63,9 +64,11 @@ class ServiceManager:
                 price = data.get(coin, {}).get(cur)
                 if price is not None:
                     price_decimal = Decimal(str(price))
+                    ttl_value = int(time.time()) + 86400
                     data = {
                         'cur': cur,
-                        'price': price_decimal
+                        'price': price_decimal,
+                        'ttl': ttl_value
                     }
                     PersistenceManager.add_coin_record(pk_value, data)
                     return price

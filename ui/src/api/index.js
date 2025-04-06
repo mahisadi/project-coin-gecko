@@ -34,7 +34,11 @@ export const fetchDataSet = async (crypto, currency) => {
 
 export const getCoinRank = async (crypto, currency) => {
   try {
-    const response = await apiClient.get(`/rank?coin=${crypto}&cur=${currency}`);
+    let resoure_path = '/volrank';
+    if (crypto && currency){
+      resoure_path = `/volrank?coin=${crypto}&cur=${currency}`
+    }
+    const response = await apiClient.get(resoure_path);
     return response.data;
   } catch (error) {
     console.error('Error getting crypto rank:', error);

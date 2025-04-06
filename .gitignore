@@ -2,6 +2,7 @@
 .DS_Store
 Thumbs.db
 *.swp
+package-lock.json
 
 # IDE/Editor files (root level)
 .idea/
@@ -39,7 +40,7 @@ ui/.env.local
 ui/.env.*.local
 ui/npm-debug.log*
 ui/**/.DS_Store
-ui/ui/package-lock.json
+ui/package-lock.json
 ui/.idea
 ui/.vscode
 ui/*.suo

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomePage from '../components/HomePage.vue';
 import Dashboard from '../components/Dashboard.vue';
+import CoinRank from '../components/CoinRank.vue';
 
 const routes = [
     { 
@@ -12,6 +13,11 @@ const routes = [
         path: '/dashboard',
         name: 'DashboardPage',
         component: Dashboard 
+    },
+    { 
+        path: '/coinrank',
+        name: 'CoinRank',
+        component: CoinRank 
     },
 ];
 

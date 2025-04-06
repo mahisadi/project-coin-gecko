@@ -1,18 +1,15 @@
 <template>
   <div id="app">
-
-    <!-- Navbar Section -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">
+        <div class="navbar-brand" href="#">
           <div class="d-flex flex-column ms-4">
         <h1 class="fs-1 fw-bold mb-0">Crypto</h1>
         <div class="ms-2">
-          <!-- <h6 class="mb-0">Currency</h6> -->
           <h6 class="mb-0">Dashboard</h6>
         </div>
       </div>
-        </a>
+        </div>
         <button
           class="navbar-toggler"
           type="button"
@@ -31,6 +28,9 @@
             </li>
             <li class="nav-item">
               <router-link to="/dashboard" class="nav-link" active-class="active">Dashboard</router-link>
+            </li>
+            <li class="nav-item">
+              <router-link to="/coinrank" class="nav-link" active-class="active">Coin Ranks</router-link>
             </li>
           </ul>
         </div>

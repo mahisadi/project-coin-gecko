@@ -40,7 +40,7 @@ export default {
             },
             title: {
               display: true,
-              text: 'DateTime'
+              text: 'Time'
             }
           },
           y: {
@@ -50,7 +50,7 @@ export default {
             },
             title: {
               display: true,
-              text: 'Currency in USD'
+              text: 'Currency'
             }
           }
         }

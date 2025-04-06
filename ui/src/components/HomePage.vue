@@ -23,10 +23,10 @@
   <div v-if="submitted" class="mt-4">
     <h4>You selected:</h4>
     <h6>Crypto: {{ selectedCrypto }}</h6>
-    <h6>Currency: {{ selectedCurrency }}</h6>
-    <h5>Price: $ {{ cryptoPrice }}</h5>
+    <h5>Price: {{ cryptoPrice }}  {{ selectedCurrency }}</h5>
     <div>
-      <button @click="redirectDashboard">Show past 24 hours price data</button>
+      <button class="btn btn-secondary" @click="redirectDashboard">Show past 24 hours price data</button>
+      <button class="btn btn-secondary" @click="redirectRank">Get {{ selectedCrypto }} volatile rank</button>
     </div>
   </div>
   </div>
@@ -65,10 +65,22 @@ export default {
         coin: this.selectedCrypto
       }
     });
+  },
+    redirectRank() {
+      this.$router.push({
+      path: '/coinrank',
+      query: { 
+        cur: this.selectedCurrency,
+        coin: this.selectedCrypto
+      }
+    });
   }
   }
 };
 </script>
 
 <style scoped>
+.btn-secondary {
+  margin-right: 10px; /* Adds space to the right of each button */
+}
 </style>
